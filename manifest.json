@@ -1,0 +1,14 @@
+{
+  "name": "Tabinator",
+  "version": "1.0",
+  "description": "Close your Tabs!",
+  "permissions": ["declarativeContent","tabs"],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "page_action": {
+    "default_popup": "popup.html"
+  },
+  "manifest_version": 2
+}

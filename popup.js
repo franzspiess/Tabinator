@@ -1,0 +1,1 @@
+chrome.tabs.getCurrent(tab => console.log(tab))
