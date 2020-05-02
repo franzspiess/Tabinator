@@ -5,20 +5,11 @@ $(document).ready(() => {
         $('option:selected').removeAttr('selected')
         $('#duration option[value="' + result.duration + '"]').prop('selected', true)
     })
-
-    const keepGroupOpenInput = $('#keepGroupOpen')
-    deriveInputState(keepGroupOpenInput)
-
     const keepOpenInput = $('#keepOpen')
     deriveInputState(keepOpenInput)
 
-    keepOpenInput.click(() => {
-        chrome.runtime.sendMessage({
-            keepOpen: 'CLICK'
-        }, (response) => {
-            console.log(response)
-        })
-    })
+    const keepGroupOpenInput = $('#keepGroupOpen')
+    deriveInputState(keepGroupOpenInput)
 
     durationSelect.change(() => {
         chrome.runtime.sendMessage({
@@ -27,6 +18,24 @@ $(document).ready(() => {
             console.log(response)
         })
     })
+
+    keepOpenInput.click(() => {
+        chrome.runtime.sendMessage({
+            keepOpen: 'CLICK'
+        }, (response) => {
+            console.log(response, 'KEEPOPEN')
+        })
+    })
+
+    keepGroupOpenInput.click(() => {
+        chrome.runtime.sendMessage({
+            keepGroupOpen: 'CLICK'
+        }, (response) => {
+            console.log(response, 'KEEPGROUPOPEN')
+        })
+    })
+
+
 
 
 })
@@ -46,7 +55,17 @@ function deriveInputState(node) {
         })
     }
     if (id === 'keepGroupOpen') {
-        console.log(node.id)
+        chrome.storage.local.get(['openGroups', 'currentTab'], (response) => {
+            chrome.tabs.query({active:true},([tab]) => {
+                console.log('A')
+                response.openGroups.forEach((url) => {
+                    console.log(tab.url.indexOf(url))
+                    if (tab.url.indexOf(url) !== -1) {
+                        node.prop('checked')
+                    }
+                })
+            })
+        })
     }
 
 }

@@ -1,14 +1,16 @@
 const timeouts = {}
 
 chrome.runtime.onInstalled.addListener(function () {
-  chrome.storage.local.set({ duration: 1800000, 
-    openTabs: [] 
+  chrome.storage.local.set({
+    duration: 1800000,
+    openTabs: [],
+    openGroups: []
   }, () => {
   })
   chrome.declarativeContent.onPageChanged.removeRules(undefined, function () {
     chrome.declarativeContent.onPageChanged.addRules([{
       conditions: [new chrome.declarativeContent.PageStateMatcher({
-        pageUrl: { schemes: ['http', 'https','chrome'] },
+        pageUrl: { schemes: ['http', 'https', 'chrome'] },
       })
       ],
       actions: [new chrome.declarativeContent.ShowPageAction()]
@@ -19,7 +21,7 @@ chrome.runtime.onInstalled.addListener(function () {
 
 
 chrome.tabs.onActivated.addListener((info) => {
-  console.log(info)
+  console.log(info, 'INFO')
   const tabId = info.tabId
   chrome.storage.local.set({ currentTab: tabId }, () => {
   })
@@ -28,7 +30,8 @@ chrome.tabs.onActivated.addListener((info) => {
     console.log(duration, timeouts, openTabs, 'CCCCC')
     chrome.windows.getCurrent({ populate: true }, (window) => {
       window.tabs.forEach(tab => {
-        const domain = tab.url.match(/^(?:https?:)?(?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:\/\n]+)/i)
+        const domain = tab.url.match(/^(?:.*:\/\/)?(?:.*?\.)?([^:\/]*?\.[^:\/]*).*$/)
+        console.log(domain, 'DOMAIN')
         if (tab.active) {
           console.log(tab.id, 'REMOVED')
           clearTimeoutForTab(tab.id)
@@ -42,6 +45,10 @@ chrome.tabs.onActivated.addListener((info) => {
     })
   })
 })
+
+// ^(?:.*:\/\/)?(?:.*?\.)?([^:\/]*?\.[^:\/]*).*$
+// /^(?:https?:)?(?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:\/\n]+)/i
+// 
 
 // chrome.tabs.onCreated.addListener(({ id }) => {
 //   chrome.storage.local.get(['duration'], (result) => {
@@ -59,7 +66,7 @@ chrome.tabs.onRemoved.addListener((id) => {
 chrome.runtime.onMessage.addListener(
   (request, sender, sendResponse) => {
     if (request.keepOpen) {
-      checkboxClick(sendResponse)
+      keepOpenClick(sendResponse)
     }
     if (request.duration) {
       console.log(request)
@@ -79,10 +86,16 @@ chrome.runtime.onMessage.addListener(
         })
       })
     }
+    if (request.keepGroupOpen) {
+      keepGroupOpenClick()
+      // chrome.tabs.query({ active: true }, ([tab]) => {
+      //   const url = tab.url.match(/^(?:.*:\/\/)?(?:.*?\.)?([^:\/]*?\.[^:\/]*).*$/)[1]
+      // })
+    }
     sendResponse('RECEIVED')
   });
 
-function checkboxClick(cb) {
+function keepOpenClick() {
   new Promise(res => {
     chrome.storage.local.get(['openTabs', 'currentTab', 'duration'], ({ openTabs, currentTab, duration }) => {
       if (openTabs.includes(currentTab)) {
@@ -102,7 +115,31 @@ function checkboxClick(cb) {
       console.log('setOpenTabs', openTabs)
     })
   })
+}
 
+function keepGroupOpenClick() {
+  new Promise(res => {
+    chrome.tabs.query({ active: true }, ([tab]) => {
+      const domain = tab.url.match(/^(?:.*:\/\/)?(?:.*?\.)?([^:\/]*?\.[^:\/]*).*$/)[1]
+      chrome.storage.local.get(['openGroups', 'currentTab', 'duration'], ({ openGroups, currentTab, duration }) => {
+        if (openGroups.includes(domain)) {
+          openGroups = openGroups.filter(string => {
+            string === domain
+          })
+          setTimeoutForTab(currentTab, duration)
+        }
+        else {
+          openGroups.push(domain)
+          clearTimeoutForTab(currentTab)
+        }
+        res(openGroups)
+      })
+    })
+  }).then(openGroups => {
+    chrome.storage.local.set({ openGroups }, () => {
+      console.log('setOpenGroups', openGroups)
+    })
+  })
 }
 
 function setTimeoutForTab(tab, timeoutDuration) {
