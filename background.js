@@ -49,7 +49,7 @@ chrome.tabs.onActivated.addListener((info) => {
           !openGroups.includes(domain) &&
           !timeouts[tab.id]
         ) {
-          console.log(domain, tab, 'ADDED')
+          console.log('ADDED', tab.id, domain)
           setTimeoutForTab(tab.id, duration)
         }
 
@@ -58,16 +58,10 @@ chrome.tabs.onActivated.addListener((info) => {
   })
 })
 
-// ^(?:.*:\/\/)?(?:.*?\.)?([^:\/]*?\.[^:\/]*).*$
-// /^(?:https?:)?(?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:\/\n]+)/i
-// 
-
-// chrome.tabs.onCreated.addListener(({ id }) => {
-//   chrome.storage.local.get(['duration'], (result) => {
-//     console.log('CREATED')
-//     setTimeoutForTab(id, result.duration)
-//   })
-// })
+chrome.tabs.onCreated.addListener(({ id }) => {
+  timeouts[id] = 'TOUCHED'
+  console.log('TOUCHED', id)
+})
 
 chrome.tabs.onRemoved.addListener((id) => {
   if (timeouts[id]) {
@@ -77,11 +71,11 @@ chrome.tabs.onRemoved.addListener((id) => {
 
 chrome.runtime.onMessage.addListener(
   (request, sender, sendResponse) => {
-
+    
     if (request.keepOpen) {
       keepOpenClick('openTabs')
     }
-
+    
     if (request.duration) {
       const duration = parseInt(request.duration)
       chrome.storage.local.set({ duration }, () => {
@@ -99,48 +93,53 @@ chrome.runtime.onMessage.addListener(
         })
       })
     }
-
+    
     if (request.keepGroupOpen) {
       keepOpenClick('openGroups')
     }
-
+    
     sendResponse('RECEIVED')
   });
-
-function keepOpenClick(key) {
-  new Promise(res => {
-    chrome.storage.local.get([key, 'currentTab', 'domain', 'duration'], (storage) => {
-      const { currentTab, domain, duration } = storage
-      const tabArray = storage[key]
-      const identifier = key === 'openTabs' ? currentTab : domain
-
-      if (tabArray.includes(identifier)) {
-        resultArray = tabArray.filter(tab => {
-          tab === identifier
-        })
-        setTimeoutForTab(currentTab, duration)
-      } else {
-        resultArray = [...tabArray,identifier]
-        clearTimeoutForTab(currentTab)
-      }
-
-      res(resultArray)
-    
+  
+  function keepOpenClick(key) {
+    new Promise(res => {
+      chrome.storage.local.get([key, 'currentTab', 'domain', 'duration'], (storage) => {
+        const { currentTab, domain, duration } = storage
+        const tabArray = storage[key]
+        const identifier = key === 'openTabs' ? currentTab : domain
+        
+        if (tabArray.includes(identifier)) {
+          resultArray = tabArray.filter(tab => {
+            tab === identifier
+          })
+          setTimeoutForTab(currentTab, duration)
+        } else {
+          resultArray = [...tabArray,identifier]
+          clearTimeoutForTab(currentTab)
+        }
+        
+        res(resultArray)
+        
+      })
+    }).then(result => {
+      chrome.storage.local.set({ [key]: result  }, () => {
+        console.log(`SET STORAGE ${key} : ${result}`)
+      })
     })
-  }).then(result => {
-    chrome.storage.local.set({ [key]: result  }, () => {
-      console.log(`SET STORAGE ${key} : ${result}`)
-    })
-  })
-}
-
-function setTimeoutForTab(tab, timeoutDuration) {
-  timeouts[tab] = setTimeout(() => {
-    chrome.tabs.remove(tab)
-  }, timeoutDuration)
-}
-
-function clearTimeoutForTab(tab) {
-  clearTimeout(timeouts[tab])
-  delete timeouts[tab]
-}
+  }
+  
+  function setTimeoutForTab(tab, timeoutDuration) {
+    timeouts[tab] = setTimeout(() => {
+      chrome.tabs.remove(tab)
+    }, timeoutDuration)
+  }
+  
+  function clearTimeoutForTab(tab) {
+    clearTimeout(timeouts[tab])
+    delete timeouts[tab]
+  }
+  
+  
+  // ^(?:.*:\/\/)?(?:.*?\.)?([^:\/]*?\.[^:\/]*).*$
+  // /^(?:https?:)?(?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:\/\n]+)/i
+  // 
