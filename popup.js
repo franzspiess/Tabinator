@@ -48,7 +48,6 @@ chrome.runtime.onMessage.addListener(
 
 function deriveInputState(node) {
     const id = node.attr('id')
-    console.log(id)
     if (id === 'keepOpen') {
         chrome.storage.local.get(['openTabs', 'currentTab'], (response) => {
             node.prop('checked', response.openTabs.includes(response.currentTab))
@@ -56,13 +55,13 @@ function deriveInputState(node) {
     }
     if (id === 'keepGroupOpen') {
         chrome.storage.local.get(['openGroups', 'currentTab'], (response) => {
-            chrome.tabs.query({active:true},([tab]) => {
-                console.log('A')
+            chrome.tabs.query({ active: true }, ([tab]) => {
                 response.openGroups.forEach((url) => {
+                    console.log(tab.url, url)
                     console.log(tab.url.indexOf(url))
-                    if (tab.url.indexOf(url) !== -1) {
-                        node.prop('checked')
-                    }
+
+                    node.prop('checked', tab.url.indexOf(url) !== -1)
+
                 })
             })
         })

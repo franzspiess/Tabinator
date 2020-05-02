@@ -25,19 +25,24 @@ chrome.tabs.onActivated.addListener((info) => {
   const tabId = info.tabId
   chrome.storage.local.set({ currentTab: tabId }, () => {
   })
-  chrome.storage.local.get(['duration', 'openTabs'], (result) => {
-    const { openTabs, duration } = result
+  chrome.storage.local.get(['duration', 'openTabs','openGroups'], (result) => {
+    const { openTabs, duration, openGroups } = result
     console.log(duration, timeouts, openTabs, 'CCCCC')
     chrome.windows.getCurrent({ populate: true }, (window) => {
       window.tabs.forEach(tab => {
-        const domain = tab.url.match(/^(?:.*:\/\/)?(?:.*?\.)?([^:\/]*?\.[^:\/]*).*$/)
-        console.log(domain, 'DOMAIN')
+        const domainRegex = tab.url.match(/^(?:.*:\/\/)?(?:.*?\.)?([^:\/]*?\.[^:\/]*).*$/)
+        const domain = domainRegex ? domainRegex[1] : 'noStandardUrl'
         if (tab.active) {
           console.log(tab.id, 'REMOVED')
           clearTimeoutForTab(tab.id)
         }
-        if (!tab.active && !openTabs.includes(tab.id) && !timeouts[tab.id]) {
-          console.log(tab.id, 'ADDED')
+        if (
+          !tab.active && 
+          !openTabs.includes(tab.id) && 
+          !openGroups.includes(domain) &&
+          !timeouts[tab.id]
+          ) {
+          console.log(domain,tab, 'ADDED')
           setTimeoutForTab(tab.id, duration)
         }
 
@@ -88,9 +93,6 @@ chrome.runtime.onMessage.addListener(
     }
     if (request.keepGroupOpen) {
       keepGroupOpenClick()
-      // chrome.tabs.query({ active: true }, ([tab]) => {
-      //   const url = tab.url.match(/^(?:.*:\/\/)?(?:.*?\.)?([^:\/]*?\.[^:\/]*).*$/)[1]
-      // })
     }
     sendResponse('RECEIVED')
   });
