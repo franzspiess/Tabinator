@@ -1,16 +1,54 @@
 <!DOCTYPE html>
-  <html>
-    <head>
-      <style>
-        .myClass {
-          height: 30px;
-          width: 100px;
-          outline: none;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="myClass"><p>WELCOME TO TABINATOR</p></div>
-    </body>
-    <!-- <script src="popup.js"></script> -->
-  </html>
+<html>
+
+<head>
+  <style>
+    .myClass {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      align-items: center;
+      height: 300px;
+      width: 240px;
+      outline: none;
+    }
+  </style>
+  <link type="text/css" rel="stylesheet" href="css/materialize.min.css" media="screen,projection" />
+</head>
+
+<body>
+  <div class="myClass">
+    <h6>WELCOME TO TABINATOR</h6>
+    <div> 
+      <label><h6>DURATION</h6></label><br />
+      <select type="select" id="duration" class="browser-default col">
+        <option value="300000">5 minutes</option>
+        <option value="900000">15 minutes</option>
+        <option value="1800000">30 minutes</option>
+        <option value="3600000">1 hour</option>
+        <option value="7200000">2 hours</option>
+        <option value="10800000">3 hours</option>
+        <option value="14400000">4 hours</option>
+        <option value="21600000">6 hours</option>
+      </select><br /><br />
+    </div>
+    <div>
+      <label>
+        <input type="checkbox" id="keepOpen" />
+        <span>KEEP OPEN</span>
+      </label>
+    </div>
+    <div>
+      <label>
+        <input type="checkbox" id="keepGroupOpen" />
+        <span>KEEP GROUP OPEN</span>
+      </label>
+    </div>
+  </div>
+</body>
+<script type="text/javascript" src="jquery-3.4.1.min.js"></script>
+<script type="text/javascript" src="background.js"></script>
+<script type="text/javascript" src="popup.js"></script>
+<script type="text/javascript" src="js/materialize.min.js"></script>
+
+</html>
