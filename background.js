@@ -21,28 +21,35 @@ chrome.runtime.onInstalled.addListener(function () {
 
 
 chrome.tabs.onActivated.addListener((info) => {
-  console.log(info, 'INFO')
   const tabId = info.tabId
-  chrome.storage.local.set({ currentTab: tabId }, () => {
-  })
-  chrome.storage.local.get(['duration', 'openTabs','openGroups'], (result) => {
+
+  chrome.storage.local.get(['duration', 'openTabs', 'openGroups'], (result) => {
     const { openTabs, duration, openGroups } = result
-    console.log(duration, timeouts, openTabs, 'CCCCC')
+
     chrome.windows.getCurrent({ populate: true }, (window) => {
       window.tabs.forEach(tab => {
         const domainRegex = tab.url.match(/^(?:.*:\/\/)?(?:.*?\.)?([^:\/]*?\.[^:\/]*).*$/)
         const domain = domainRegex ? domainRegex[1] : 'noStandardUrl'
+
+
         if (tab.active) {
           console.log(tab.id, 'REMOVED')
+          chrome.storage.local.set({
+            currentTab: tabId,
+            domain
+          }, () => {
+            console.log(tabId, domain, 'SET STORAGE IN ACTIVE TAB')
+          })
           clearTimeoutForTab(tab.id)
         }
+
         if (
-          !tab.active && 
-          !openTabs.includes(tab.id) && 
+          !tab.active &&
+          !openTabs.includes(tab.id) &&
           !openGroups.includes(domain) &&
           !timeouts[tab.id]
-          ) {
-          console.log(domain,tab, 'ADDED')
+        ) {
+          console.log(domain, tab, 'ADDED')
           setTimeoutForTab(tab.id, duration)
         }
 
@@ -70,11 +77,12 @@ chrome.tabs.onRemoved.addListener((id) => {
 
 chrome.runtime.onMessage.addListener(
   (request, sender, sendResponse) => {
+
     if (request.keepOpen) {
-      keepOpenClick(sendResponse)
+      keepOpenClick('openTabs')
     }
+
     if (request.duration) {
-      console.log(request)
       const duration = parseInt(request.duration)
       chrome.storage.local.set({ duration }, () => {
         timeoutDuration = duration
@@ -91,55 +99,37 @@ chrome.runtime.onMessage.addListener(
         })
       })
     }
+
     if (request.keepGroupOpen) {
-      keepGroupOpenClick()
+      keepOpenClick('openGroups')
     }
+
     sendResponse('RECEIVED')
   });
 
-function keepOpenClick() {
+function keepOpenClick(key) {
   new Promise(res => {
-    chrome.storage.local.get(['openTabs', 'currentTab', 'duration'], ({ openTabs, currentTab, duration }) => {
-      if (openTabs.includes(currentTab)) {
-        openTabs = openTabs.filter(tab => {
-          tab === currentTab
+    chrome.storage.local.get([key, 'currentTab', 'domain', 'duration'], (storage) => {
+      const { currentTab, domain, duration } = storage
+      const tabArray = storage[key]
+      const identifier = key === 'openTabs' ? currentTab : domain
+
+      if (tabArray.includes(identifier)) {
+        resultArray = tabArray.filter(tab => {
+          tab === identifier
         })
         setTimeoutForTab(currentTab, duration)
-      }
-      else {
-        openTabs.push(currentTab)
+      } else {
+        resultArray = [...tabArray,identifier]
         clearTimeoutForTab(currentTab)
       }
-      res(openTabs)
-    })
-  }).then(openTabs => {
-    chrome.storage.local.set({ openTabs }, () => {
-      console.log('setOpenTabs', openTabs)
-    })
-  })
-}
 
-function keepGroupOpenClick() {
-  new Promise(res => {
-    chrome.tabs.query({ active: true }, ([tab]) => {
-      const domain = tab.url.match(/^(?:.*:\/\/)?(?:.*?\.)?([^:\/]*?\.[^:\/]*).*$/)[1]
-      chrome.storage.local.get(['openGroups', 'currentTab', 'duration'], ({ openGroups, currentTab, duration }) => {
-        if (openGroups.includes(domain)) {
-          openGroups = openGroups.filter(string => {
-            string === domain
-          })
-          setTimeoutForTab(currentTab, duration)
-        }
-        else {
-          openGroups.push(domain)
-          clearTimeoutForTab(currentTab)
-        }
-        res(openGroups)
-      })
+      res(resultArray)
+    
     })
-  }).then(openGroups => {
-    chrome.storage.local.set({ openGroups }, () => {
-      console.log('setOpenGroups', openGroups)
+  }).then(result => {
+    chrome.storage.local.set({ [key]: result  }, () => {
+      console.log(`SET STORAGE ${key} : ${result}`)
     })
   })
 }

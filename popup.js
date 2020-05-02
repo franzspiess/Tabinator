@@ -15,7 +15,7 @@ $(document).ready(() => {
         chrome.runtime.sendMessage({
             duration: $("select#duration option:selected").val()
         }, (response) => {
-            console.log(response)
+            console.log(response, 'DURATION')
         })
     })
 
@@ -34,37 +34,26 @@ $(document).ready(() => {
             console.log(response, 'KEEPGROUPOPEN')
         })
     })
-
-
-
-
 })
 
-chrome.runtime.onMessage.addListener(
-    (request, sender, sendResponse) => {
-        console.log(request, sender, sendResponse)
-    }
-)
-
 function deriveInputState(node) {
+
     const id = node.attr('id')
+
     if (id === 'keepOpen') {
         chrome.storage.local.get(['openTabs', 'currentTab'], (response) => {
             node.prop('checked', response.openTabs.includes(response.currentTab))
         })
     }
+
     if (id === 'keepGroupOpen') {
         chrome.storage.local.get(['openGroups', 'currentTab'], (response) => {
             chrome.tabs.query({ active: true }, ([tab]) => {
                 response.openGroups.forEach((url) => {
-                    console.log(tab.url, url)
-                    console.log(tab.url.indexOf(url))
-
                     node.prop('checked', tab.url.indexOf(url) !== -1)
-
                 })
             })
         })
     }
-
+    
 }
