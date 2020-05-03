@@ -21,6 +21,7 @@ chrome.runtime.onInstalled.addListener(function () {
 
 
 chrome.tabs.onActivated.addListener((info) => {
+  console.log(timeouts, 'TIMEOUTS')
   const tabId = info.tabId
 
   chrome.storage.local.get(['duration', 'openTabs', 'openGroups'], (result) => {
@@ -109,10 +110,7 @@ chrome.runtime.onMessage.addListener(
         const identifier = key === 'openTabs' ? currentTab : domain
         
         if (tabArray.includes(identifier)) {
-          resultArray = tabArray.filter(tab => {
-            tab === identifier
-          })
-          setTimeoutForTab(currentTab, duration)
+          resultArray = tabArray.filter(tab => tab !== identifier)
         } else {
           resultArray = [...tabArray,identifier]
           clearTimeoutForTab(currentTab)
