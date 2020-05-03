@@ -73,23 +73,42 @@ chrome.tabs.onActivated.addListener((info) => {
 // chrome.storage.local.get(['duration', 'openTabs', 'openGroups'], (result) => {
 //   const { openTabs, duration, openGroups } = result
 
-function getParamsPromise(paramsArray) {
-  return new Promise(res => {
-    chrome.storage.local.get(paramsArray, (result) => {
-      res(result)
-    })
-  })
-}
 
 chrome.tabs.onCreated.addListener(({ id }) => {
-  timeouts[id] = 'TOUCHED'
-  console.log('TOUCHED', id)
+  getParamsPromise(['timeouts'])
+    .then(({
+      timeouts
+    }) => {
+      timeouts[id] = 'CREATED'
+      console.log('TOUCHED', id)
+      return timeouts
+    }
+    )
+    .then(timeouts => {
+      chrome.storage.local.set({ timeouts }, () => {
+        console.log(`SET STORAGE ${timeouts}`)
+      })
+    })
+
 })
 
 chrome.tabs.onRemoved.addListener((id) => {
-  if (timeouts[id]) {
-    clearTimeoutForTab(id)
-  }
+  getParamsPromise(['timeouts'])
+    .then(({
+      timeouts
+    }) => {
+      if (timeouts[id]) {
+        return clearTimeoutForTab(timeouts, id)
+      }
+      return timeouts
+    }
+    )
+    .then(timeouts => {
+      chrome.storage.local.set({ timeouts }, () => {
+        console.log(`SET STORAGE ${timeouts}`)
+      })
+    })
+  
 })
 
 chrome.runtime.onMessage.addListener(
@@ -169,6 +188,14 @@ function keepOpenClick(key) {
   })
 }
 
+function getParamsPromise(paramsArray) {
+  return new Promise(res => {
+    chrome.storage.local.get(paramsArray, (result) => {
+      res(result)
+    })
+  })
+}
+
 function setTimeoutForTab(timeouts, tab, timeoutDuration) {
   console.log(arguments)
   timeouts[tab] = setTimeout(() => {
@@ -185,5 +212,5 @@ function clearTimeoutForTab(timeouts, tab) {
 }
 
 
-  // ^(?:.*:\/\/)?(?:.*?\.)?([^:\/]*?\.[^:\/]*).*$
-  // /^(?:https?:)?(?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:\/\n]+)/i
+// ^(?:.*:\/\/)?(?:.*?\.)?([^:\/]*?\.[^:\/]*).*$
+// /^(?:https?:)?(?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:\/\n]+)/i
