@@ -132,10 +132,10 @@ chrome.runtime.onMessage.addListener(
 
             clearTimeoutForTab(acc, tab.id)
             if (!tab.active &&
-              !acc.includes(tab.id) &&
+              !openTabs.includes(tab.id) &&
               !openGroups.includes(domain)
             ) {
-              setTimeoutForTab(acc, tab.id, newDuration)
+              return setTimeoutForTab(acc, tab.id, newDuration)
             }
             return acc
           }, timeouts))
@@ -170,11 +170,15 @@ function keepOpenClick(key) {
       const { currentTab, domain } = storage
       const tabArray = storage[key]
       const identifier = key === 'openTabs' ? currentTab : domain
+      let resultArray = []
 
       if (tabArray.includes(identifier)) {
-        resultArray = tabArray.filter(tab => tab !== identifier)
+        resultArray = [...tabArray.filter(tab => tab !== identifier)]
       } else {
-        resultArray = [...tabArray, identifier]
+        resultArray = [...tabArray]
+        if (identifier !== 'noStandardUrl') {
+          resultArray.push(identifier)
+        }
         clearTimeoutForTab(currentTab)
       }
 

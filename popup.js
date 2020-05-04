@@ -47,13 +47,9 @@ function deriveInputState(node) {
     }
 
     if (id === 'keepGroupOpen') {
-        chrome.storage.local.get(['openGroups', 'currentTab'], (response) => {
-            chrome.tabs.query({ active: true }, ([tab]) => {
-                response.openGroups.forEach((url) => {
-                    node.prop('checked', tab.url.indexOf(url) !== -1)
-                })
-            })
+        chrome.storage.local.get(['openGroups', 'domain'], (response) => {
+            node.prop('checked', response.openGroups.includes(response.domain))
         })
     }
-    
+
 }
