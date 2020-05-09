@@ -26,10 +26,10 @@ chrome.tabs.onUpdated.addListener(info => {
       currentTab
     }) => {
       chrome.tabs.query({ active: true }, (tabArray) => {
-        const [tab,] = tabArray.filter(tab => tab.id === currentTab)
+        const tab = tabArray.find(tab => tab.id === currentTab)
 
-        const newDomain = getDomain(tab.url)
-
+        const newDomain = getDomain(tab && tab.url)
+        console.log(newDomain, 'NEWDOMAIN')
         if (newDomain !== domain) {
           setValuesInStorage({
             domain: newDomain
@@ -58,6 +58,7 @@ chrome.tabs.onActivated.addListener((info) => {
 
           if (tab.active) {
             currentDomain = domain
+            console.log('THIS IS CURRENT IN ACTIVE', currentDomain)
             return clearTimeoutForTab(acc, tab.id)
           }
 
@@ -220,6 +221,9 @@ function clearTimeoutForTab(timeouts, tab) {
 }
 
 function getDomain(url) {
-  const domainRegex = url.match(/^(?:.*:\/\/)?(?:.*?\.)?([^:\/]*?\.[^:\/]*).*$/)
-  return domainRegex ? domainRegex[1] : 'noStandardUrl'
+  if (url) {
+    const domainRegex = url.match(/^(?:.*:\/\/)?(?:.*?\.)?([^:\/]*?\.[^:\/]*).*$/)
+    return domainRegex ? domainRegex[1] : 'noStandardUrl' 
+  }
+  return 'noStandardUrl'
 }
