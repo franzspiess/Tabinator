@@ -5,48 +5,51 @@ $(document).ready(() => {
         $('option:selected').removeAttr('selected')
         $('#duration option[value="' + result.duration + '"]').prop('selected', true)
     })
-
-    const keepGroupOpenInput = $('#keepGroupOpen')
-    deriveInputState(keepGroupOpenInput)
-
     const keepOpenInput = $('#keepOpen')
     deriveInputState(keepOpenInput)
 
-    keepOpenInput.click(() => {
-        chrome.runtime.sendMessage({
-            keepOpen: 'CLICK'
-        }, (response) => {
-            console.log(response)
-        })
-    })
+    const keepGroupOpenInput = $('#keepGroupOpen')
+    deriveInputState(keepGroupOpenInput)
 
     durationSelect.change(() => {
         chrome.runtime.sendMessage({
             duration: $("select#duration option:selected").val()
         }, (response) => {
-            console.log(response)
+            console.log(response, 'DURATION')
         })
     })
 
+    keepOpenInput.click(() => {
+        chrome.runtime.sendMessage({
+            keepOpen: 'CLICK'
+        }, (response) => {
+            console.log(response, 'KEEPOPEN')
+        })
+    })
 
+    keepGroupOpenInput.click(() => {
+        chrome.runtime.sendMessage({
+            keepGroupOpen: 'CLICK'
+        }, (response) => {
+            console.log(response, 'KEEPGROUPOPEN')
+        })
+    })
 })
 
-chrome.runtime.onMessage.addListener(
-    (request, sender, sendResponse) => {
-        console.log(request, sender, sendResponse)
-    }
-)
-
 function deriveInputState(node) {
+
     const id = node.attr('id')
-    console.log(id)
+
     if (id === 'keepOpen') {
         chrome.storage.local.get(['openTabs', 'currentTab'], (response) => {
             node.prop('checked', response.openTabs.includes(response.currentTab))
         })
     }
+
     if (id === 'keepGroupOpen') {
-        console.log(node.id)
+        chrome.storage.local.get(['openGroups', 'domain'], (response) => {
+            node.prop('checked', response.openGroups.includes(response.domain))
+        })
     }
 
 }
