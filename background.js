@@ -192,7 +192,6 @@ function setValuesInStorage(setterObj) {
 }
 
 function setTimeoutForTab(timeouts, tab, timeoutDuration) {
-  console.log(arguments)
   timeouts[tab] = setTimeout(() => {
     chrome.tabs.remove(tab)
   }, timeoutDuration)
@@ -200,7 +199,6 @@ function setTimeoutForTab(timeouts, tab, timeoutDuration) {
 }
 
 function clearTimeoutForTab(timeouts, tab) {
-  console.log(arguments)
   clearTimeout(timeouts[tab])
   delete timeouts[tab]
   return timeouts
