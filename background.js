@@ -19,7 +19,7 @@ chrome.tabs.onUpdated.addListener(info => {
         const tab = tabArray.find(tab => tab.id === currentTab)
 
         const newDomain = getDomain(tab && tab.url)
-        console.log(newDomain, 'NEWDOMAIN')
+
         if (newDomain !== domain) {
           setValuesInStorage({
             domain: newDomain
@@ -43,12 +43,10 @@ chrome.tabs.onActivated.addListener((info) => {
       let currentDomain
       new Promise(res => {
         res(window.tabs.reduce((acc, tab) => {
-          console.log('UUUURRRRLLLL', tab.url)
           const domain = getDomain(tab.url)
 
           if (tab.active) {
             currentDomain = domain
-            console.log('THIS IS CURRENT IN ACTIVE', currentDomain)
             return clearTimeoutForTab(acc, tab.id)
           }
 
@@ -124,9 +122,7 @@ chrome.runtime.onMessage.addListener(
 
 function keepOpenClick(key) {
   new Promise(res => {
-    console.log(key)
     chrome.storage.local.get([key, 'currentTab', 'domain'], (storage) => {
-      console.log(storage)
       const { currentTab, domain } = storage
       const tabArray = storage[key]
       const identifier = key === 'openTabs' ? currentTab : domain
@@ -191,7 +187,7 @@ function getValuesFromStoragePromise(paramsArray) {
 
 function setValuesInStorage(setterObj) {
   chrome.storage.local.set(setterObj, () => {
-    console.log(JSON.stringify(setterObj), 'SET STORAGE IN ACTIVE TAB')
+    console.log('SET STORAGE IN ACTIVE TAB')
   })
 }
 
