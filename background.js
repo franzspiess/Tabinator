@@ -20,6 +20,7 @@ chrome.runtime.onInstalled.addListener(function () {
 });
 
 chrome.tabs.onUpdated.addListener(info => {
+  console.log(info, 'INFO')
 
   getValuesFromStoragePromise(['domain', 'currentTab'])
     .then(({
@@ -30,7 +31,7 @@ chrome.tabs.onUpdated.addListener(info => {
         const tab = tabArray.find(tab => tab.id === currentTab)
 
         const newDomain = getDomain(tab && tab.url)
-
+        console.log(newDomain)
         if (newDomain !== domain) {
           setValuesInStorage({
             domain: newDomain
@@ -72,6 +73,7 @@ chrome.tabs.onActivated.addListener((info) => {
           return acc
         }, timeouts))
       }).then(result => {
+        console.log(result, 'TIMEOUTS')
         setValuesInStorage({
           currentTab: tabId,
           domain: currentDomain,
