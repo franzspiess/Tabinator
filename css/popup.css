@@ -1,0 +1,9 @@
+.myClass {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+    height: 300px;
+    width: 240px;
+    outline: none;
+  }
