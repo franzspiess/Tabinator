@@ -1,9 +1,10 @@
+const timeouts = {}
+
 chrome.runtime.onInstalled.addListener(function () {
   chrome.storage.local.set({
     duration: 1800000,
     openTabs: [],
     openGroups: [],
-    timeouts: {}
   }, () => {
   })
 
@@ -16,12 +17,10 @@ chrome.runtime.onInstalled.addListener(function () {
       actions: [new chrome.declarativeContent.ShowPageAction()]
     }]);
   });
-  
+
 });
 
 chrome.tabs.onUpdated.addListener(info => {
-  console.log(info, 'INFO')
-
   getValuesFromStoragePromise(['domain', 'currentTab'])
     .then(({
       domain,
@@ -29,7 +28,6 @@ chrome.tabs.onUpdated.addListener(info => {
     }) => {
       chrome.tabs.query({ active: true }, (tabArray) => {
         const tab = tabArray.find(tab => tab.id === currentTab)
-
         const newDomain = getDomain(tab && tab.url)
         console.log(newDomain)
         if (newDomain !== domain) {
@@ -44,40 +42,38 @@ chrome.tabs.onUpdated.addListener(info => {
 chrome.tabs.onActivated.addListener((info) => {
   const { tabId } = info
 
-  getValuesFromStoragePromise(['duration', 'openTabs', 'openGroups', 'timeouts']).then(({
+  getValuesFromStoragePromise(['duration', 'openTabs', 'openGroups']).then(({
     openTabs,
     duration,
     openGroups,
-    timeouts
   }) => {
     console.log('NEW TAB ACTIVE', duration, openTabs, openGroups, timeouts)
     chrome.windows.getCurrent({ populate: true }, (window) => {
       let currentDomain
       new Promise(res => {
-        res(window.tabs.reduce((acc, tab) => {
+        res(window.tabs.forEach(tab => {
           const domain = getDomain(tab.url)
-
           if (tab.active) {
             currentDomain = domain
-            return clearTimeoutForTab(acc, tab.id)
+            clearTimeoutForTab(tab.id)
           }
 
           if (
             !tab.active &&
             !openTabs.includes(tab.id) &&
             !openGroups.includes(domain) &&
-            !acc[tab.id]
+            !timeouts[tab.id]
           ) {
-            return setTimeoutForTab(acc, tab.id, duration)
+            setTimeoutForTab(tab.id, duration)
           }
-          return acc
-        }, timeouts))
-      }).then(result => {
-        console.log(result, 'TIMEOUTS')
+
+        })
+        )
+      }).then(() => {
+        console.log(currentDomain, 'ONACTIVATED')
         setValuesInStorage({
           currentTab: tabId,
           domain: currentDomain,
-          timeouts: result
         })
       })
     })
@@ -87,36 +83,16 @@ chrome.tabs.onActivated.addListener((info) => {
 
 chrome.tabs.onCreated.addListener(({ id, active }) => {
   if (!active) {
-    getValuesFromStoragePromise(['timeouts'])
-      .then(({
-        timeouts
-      }) => {
-        return setTimeoutForTab(timeouts, id, 64800000)
-      })
-      .then(timeouts => {
-        setValuesInStorage({ timeouts })
-      })
+    setTimeoutForTab(id, 64800000)
   }
 })
 
 chrome.tabs.onRemoved.addListener((id) => {
-  getValuesFromStoragePromise(['timeouts'])
-    .then(({
-      timeouts
-    }) => {
-      if (timeouts[id]) {
-        return clearTimeoutForTab(timeouts, id)
-      }
-      return timeouts
-    }
-    )
-    .then(timeouts => {
-      setValuesInStorage({ timeouts })
-    })
+  clearTimeoutForTab(id)
 })
 
 chrome.runtime.onMessage.addListener(
-  (request, sender, sendResponse) => {
+  (request, _, sendResponse) => {
 
     if (request.keepOpen) {
       keepOpenClick('openTabs')
@@ -149,9 +125,7 @@ function keepOpenClick(key) {
           resultArray.push(identifier)
         }
       }
-
       res(resultArray)
-
     })
   }).then(result => {
     setValuesInStorage({ [key]: result })
@@ -160,28 +134,24 @@ function keepOpenClick(key) {
 
 function durationSelectClick(duration) {
   const newDuration = parseInt(duration)
-  getValuesFromStoragePromise(['domain', 'openGroups', 'openTabs', 'timeouts',]).then(({
+  getValuesFromStoragePromise(['domain', 'openGroups', 'openTabs']).then(({
     openGroups,
-    openTabs,
-    timeouts
+    openTabs
   }) => {
     chrome.windows.getCurrent({ populate: true }, (window) => {
-      new Promise(res => res(window.tabs.reduce((acc, tab) => {
+      new Promise(res => res(window.tabs.forEach((tab) => {
         const domain = getDomain(tab.url)
-
-        clearTimeoutForTab(acc, tab.id)
+        clearTimeoutForTab(tab.id)
         if (!tab.active &&
           !openTabs.includes(tab.id) &&
           !openGroups.includes(domain)
         ) {
-          return setTimeoutForTab(acc, tab.id, newDuration)
+          setTimeoutForTab(tab.id, newDuration)
         }
-        return acc
-      }, timeouts))
-      ).then(result => {
+      }))
+      ).then(() => {
         setValuesInStorage({
           duration: newDuration,
-          timeouts: result
         })
       })
     })
@@ -204,23 +174,21 @@ function setValuesInStorage(setterObj) {
   })
 }
 
-function setTimeoutForTab(timeouts, tab, timeoutDuration) {
+function setTimeoutForTab(tab, timeoutDuration) {
   timeouts[tab] = setTimeout(() => {
     chrome.tabs.remove(tab)
   }, timeoutDuration)
-  return timeouts
 }
 
-function clearTimeoutForTab(timeouts, tab) {
+function clearTimeoutForTab(tab) {
   clearTimeout(timeouts[tab])
   delete timeouts[tab]
-  return timeouts
 }
 
 function getDomain(url) {
   if (url) {
     const domainRegex = url.match(/^(?:.*:\/\/)?(?:.*?\.)?([^:\/]*?\.[^:\/]*).*$/)
-    return domainRegex ? domainRegex[1] : 'noStandardUrl' 
+    return domainRegex ? domainRegex[1] : 'noStandardUrl'
   }
   return 'noStandardUrl'
 }
