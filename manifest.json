@@ -1,6 +1,6 @@
 {
   "name": "Tabinator",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Close your Tabs!",
   "permissions": ["declarativeContent","tabs","storage"],
   "background": {
