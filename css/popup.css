@@ -7,3 +7,7 @@
     width: 240px;
     outline: none;
   }
+
+  h6 {
+    font-weight: bold;
+  }
