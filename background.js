@@ -29,7 +29,6 @@ chrome.tabs.onUpdated.addListener(info => {
       chrome.tabs.query({ active: true }, (tabArray) => {
         const tab = tabArray.find(tab => tab.id === currentTab)
         const newDomain = getDomain(tab && tab.url)
-        console.log(newDomain)
         if (newDomain !== domain) {
           setValuesInStorage({
             domain: newDomain
@@ -47,7 +46,6 @@ chrome.tabs.onActivated.addListener((info) => {
     duration,
     openGroups,
   }) => {
-    console.log('NEW TAB ACTIVE', duration, openTabs, openGroups, timeouts)
     chrome.windows.getCurrent({ populate: true }, (window) => {
       let currentDomain
       new Promise(res => {
@@ -70,7 +68,6 @@ chrome.tabs.onActivated.addListener((info) => {
         })
         )
       }).then(() => {
-        console.log(currentDomain, 'ONACTIVATED')
         setValuesInStorage({
           currentTab: tabId,
           domain: currentDomain,
